@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("analyst")
+  createdAt    DateTime @default(now())
+}
+
+// Minimal for Process 1 (unrecognised-vendor check only).
+// Extended with ABN / bank account / risk tier when Process 3 (Vendor Risk
+// Screener) is built — same table, not replaced.
+model Vendor {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model PurchaseOrder {
+  id             Int    @id @default(autoincrement())
+  poNumber       String @unique
+  vendorName     String
+  approvedAmount Float
+  costCentre     String
+  status         String // "Open" | "Closed"
+}
+
+// poNumber is intentionally NOT a foreign key: exception cases include
+// invoices with a missing or nonexistent PO reference (that's the point of
+// this process), so the PO lookup is done in application code
+// (services/matching.ts), not enforced at the DB level.
+model Invoice {
+  id               Int       @id @default(autoincrement())
+  vendorName       String
+  poNumber         String?
+  amount           Float
+  exceptionFlags   String // JSON-encoded string[]
+  status           String    @default("pending") // pending | approved | escalated | rejected
+  aiRecommendation String?   // approve | escalate | reject
+  aiRationale      String?
+  aiFallback       Boolean   @default(false)
+  humanOverride    String?   // approve | escalate | reject
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([poNumber])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  entityType String
+  entityId   Int
+  action     String
+  oldValue   String?
+  newValue   String?
+  timestamp  DateTime @default(now())
+}
