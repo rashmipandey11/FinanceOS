@@ -2,46 +2,35 @@
 
 ## 1. Deterministic matching runs before the LLM, not instead of it
 
-Every discrepancy (missing PO, PO not found, closed PO, duplicate, over/under amount) is detected
-in `matching.ts` by querying the PO register directly — not by asking the LLM to compute or recall
-it. The LLM only reasons over facts it's handed and produces the recommendation + rationale. This
-was the right trade-off for a Finance workflow: an LLM that occasionally miscalculates an amount
-or hallucinates a PO number is a controls failure, not a UX nit. The cost is that the "AI" layer
-looks thinner than a model that does everything end-to-end — but it's also why the rule-based
-fallback (below) can reuse the same logic and produce a trustworthy answer even when Claude is
-unavailable.
+Core invoice checks — such as missing or invalid POs, closed POs, duplicates, and amount differences — are handled through predefined rules against the PO register. Claude receives these results and provides a recommended action and rationale.
+This keeps factual checks deterministic, which is important for a Finance workflow where incorrect calculations or PO references could create control issues.This is intentional as it reduces the risks of hallucinations.
+
+Trade-off: AI has a more focused role rather than managing the process end-to-end, but the results are more reliable and the workflow can continue if Claude is unavailable.
 
 ## 2. The rule-based fallback is the same logic, not a separate "if AI is down" branch
 
-`matching.ts` always produces a `suggestedRecommendation` alongside its flags. When the Claude
-call times out, errors, or returns something that fails schema validation, that suggestion becomes
-the stored recommendation, `ai_fallback` is set, and the UI shows a banner rather than a blank
-screen or a crash. The trade-off is a slightly less "smart"-sounding rationale during an outage
-("AI unavailable — showing rule-based suggestion") — acceptable, because it's honest about what
-generated the answer, which matters more in AP than sounding polished.
+Every invoice receives a rule-based recommendation during matching. Claude can enhance this with additional reasoning, but if the AI call fails, times out, or returns an invalid response, the rule-based recommendation is used automatically.
+The user is clearly notified when this happens rather than seeing an error or blank screen.
+
+Trade-off: The fallback explanation may be simpler, but maintaining continuity and being transparent about how the recommendation was generated are more important.
 
 ## 3. SQLite via Prisma instead of Postgres
 
-The spec allows either. SQLite means no separate DB server to install or configure for a local
-demo, while migrations, a real schema, and Prisma's query API stay identical to what a Postgres
-setup would look like — so moving to Postgres later is a one-line `datasource` change, not a
-rewrite. The trade-off is that SQLite won't reflect production concurrency behavior, which is fine
-for a single-analyst demo but would need revisiting before real deployment.
+SQLite was chosen because it allows the app to run locally without requiring a separate database setup instead of Postgres to save time and efforts, perhaps can move to Postgres relatively later for deployment or large scale usage.
+
+Trade-off: SQLite does not replicate production-level concurrency and scale. It works for the current prototype but should be revisited before broader deployment.
 
 ## 4. `po_number` on `invoices` is a plain string, not a foreign key
 
-Roughly a third of the seed exception cases are invoices with a missing or nonexistent PO
-reference — that's the point of the process, not bad data. A foreign key constraint would make
-those rows either impossible to insert or require a nullable-FK workaround that adds complexity
-for no real benefit, since the PO lookup already happens explicitly in `matching.ts`. The
-trade-off is that referential integrity between `invoices.po_number` and `purchase_orders` is
-enforced in application code rather than the database — acceptable here because that code path is
-exercised on every single invoice creation.
+Invoice PO numbers are not restricted to values already present in the PO register. This is intentional because identifying missing or invalid PO references is one of the exceptions the app is designed to detect.
+The application therefore validates the PO during the matching process rather than preventing the invoice from being entered.
+
+Trade-off: PO validity is enforced through application logic rather than directly by the database, providing the flexibility needed to process exception cases.
 
 ## 5. Scope cut: JSON upload + manual entry, not PDF/OCR
 
-The spec explicitly allows PDF *or* structured JSON/manual entry. Building PDF parsing would have
-spent most of the available time on text extraction rather than the matching and triage logic that
-the assessment is actually evaluating. JSON upload, manual entry, and a one-click sample-batch
-loader cover the same demo scenarios; PDF/OCR is documented in the README as a deferred increment
-rather than attempted partially.
+For the first version, I prioritised JSON upload and manual entry rather than PDF/OCR processing. This allowed development time to focus on the core objective: invoice matching, exception identification, and triage.
+
+The complete workflow can still be demonstrated through structured uploads, manual entry, and sample data.
+
+Trade-off: Direct PDF invoice uploads are not yet supported. PDF/OCR would be a logical next enhancement rather than partially implementing it in the initial version.

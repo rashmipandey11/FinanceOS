@@ -5,8 +5,6 @@ against a PO register, discrepancies are detected deterministically, and Claude 
 plain-English approve/escalate/reject recommendation with a one-sentence rationale — always
 reviewable and overridable by a human, with every AI decision and override logged.
 
-Processes 2 (Budget Variance Narrative) and 3 (Vendor Risk Screener) are not built yet; see
-"What's not built yet" below.
 
 ## Stack
 
@@ -87,11 +85,3 @@ schema, and what's deferred), and [`docs/design-decisions.md`](docs/design-decis
 reasoning behind the key trade-offs. The diagram was authored as SVG (`docs/architecture.svg`) and
 rasterized to PNG rather than built in Draw.io/Visio, since no GUI diagramming tool was available
 in the dev environment — the SVG source is kept in the repo so it's still editable.
-
-## What's not built yet
-
-- **PDF invoice upload/OCR.** The spec allows JSON upload or manual entry as an alternative; the
-  UI supports manual entry, pasting/uploading structured JSON, and a one-click sample batch
-  loader. PDF parsing would need OCR/extraction and is deferred rather than attempted partially.
-- **Processes 2 and 3** (Budget Variance Narrative, Vendor Risk Screener) and the DB tables/UI
-  they need (`budget_actuals`, the full `vendors` profile with ABN/bank account/risk tier).
