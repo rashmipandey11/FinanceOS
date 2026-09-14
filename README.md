@@ -75,7 +75,18 @@ See [`.env.example`](.env.example) at the repo root — copy it to `server/.env`
 prompts/invoice_triage.md   # system + user prompt template
 server/                     # Express API, Prisma schema + seed
 client/                     # React frontend
+docs/architecture.png       # solution architecture diagram
+docs/architecture.svg       # editable source for the diagram
+docs/design-decisions.md    # key design decisions and trade-offs
 ```
+
+## Architecture
+
+See [`docs/architecture.png`](docs/architecture.png) for the full diagram (layers, data flow,
+schema, and what's deferred), and [`docs/design-decisions.md`](docs/design-decisions.md) for the
+reasoning behind the key trade-offs. The diagram was authored as SVG (`docs/architecture.svg`) and
+rasterized to PNG rather than built in Draw.io/Visio, since no GUI diagramming tool was available
+in the dev environment — the SVG source is kept in the repo so it's still editable.
 
 ## What's not built yet
 
@@ -84,5 +95,3 @@ client/                     # React frontend
   loader. PDF parsing would need OCR/extraction and is deferred rather than attempted partially.
 - **Processes 2 and 3** (Budget Variance Narrative, Vendor Risk Screener) and the DB tables/UI
   they need (`budget_actuals`, the full `vendors` profile with ABN/bank account/risk tier).
-- **Architecture diagram and `docs/design-decisions.md`** — will be produced once more of the
-  app exists so the diagram reflects what's actually built.
